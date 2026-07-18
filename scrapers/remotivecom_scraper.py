@@ -2,6 +2,7 @@ import requests
 import os
 import json
 import re
+from models.job import Job
 
 DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
 SOURCE = "remotive.com"
@@ -70,6 +71,7 @@ def extract_tags(text):
 
 def clean_job(job):
     title = job.get("title", "")
+    description = job.get("description", "")
 
     url = job.get("url", "")
     if not url.startswith(("http://", "https://")):
@@ -92,22 +94,22 @@ def clean_job(job):
         salary_min = salary[0]
         salary_max = salary[0]
 
-
-    return {
-        "position": title,
-        "company": job.get("company_name", ""),
-        "tags": extract_tags(title),
-        "salary_min": salary_min,
-        "salary_max": salary_max,
-        "url": url,
-        "date": date,
-        "source": SOURCE
-    }
+    return Job(
+        title = title,
+        company= job.get("company_name", ""),
+        description=description,
+        tags= [],
+        salary_min=salary_min,
+        salary_max=salary_max,
+        url=url,
+        date_posted=date,
+        source=SOURCE
+    )
 
 
 def get_remotive_jobs():
     if DEBUG_MODE:
-        with open(file="remotive_raw.json", mode="r") as file:
+        with open(file="../remotive_raw.json", mode="r") as file:
             raw_jobs = json.load(file)
     else:
         raw_jobs = fetch_data()
