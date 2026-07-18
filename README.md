@@ -1,3 +1,20 @@
+## Current version
+
+v1.0 - Stable job aggregation and ranking pipeline
+
+Implemented:
+- Multiple API sources
+- Data normalization
+- Deduplication
+- Filtering
+- Scoring
+- Automated tests
+
+Next:
+- v1.5: LLM-based job enrichment, improved ranking scoring
+
+
+
 # Job Search Automation
 A Python-based job search automation tool that aggregates remote job listings from multiple job boards, filters them based on your preferences, and ranks them by relevance.
 
@@ -88,7 +105,6 @@ requests: For API calls to job boards
 Contributions are welcome! Please feel free to submit pull requests with improvements.
 
 # Extensions for future versions:
-- Create Job class to standardise output of the scrapers
 - Implement AI to analyse unstructured data from scrapers and create tags/descriptions for useful scoring system
   - refine scoring
 - Allow user to upload CV, scrape data, let AI match jobs -> later version

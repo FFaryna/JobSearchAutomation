@@ -8,8 +8,7 @@ DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
 SOURCE = "remotive.com"
 NOISE_WORDS = {
     "senior", "junior", "lead", "remote", "fully",
-    "part-time", "full-time", "developer", "engineer",
-    "software", "job", "hiring"
+    "part-time", "full-time", "job", "hiring"
 }
 
 
