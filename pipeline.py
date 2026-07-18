@@ -1,6 +1,6 @@
 import re
-from remoteok_scraper import get_remoteok_jobs
-from remotivecom_scraper import get_remotive_jobs
+from scrapers.remoteok_scraper import get_remoteok_jobs
+from scrapers.remotivecom_scraper import get_remotive_jobs
 
 TOP_VALUES = 10
 SOURCE_WEIGHTS = {
@@ -12,17 +12,20 @@ SOURCE_WEIGHTS = {
 def duplicate_quality_score(job):
     score = 0
 
-    if job.get["salary_min"]:
+    if job.salary_min:
         score += 1
 
-    if job.get['tags']:
+    tags = job.tags or []
+    if tags:
         score += len(job['tags']) * 0.5
 
-    if job.get['company']:
+    if job.company:
         score += 1
 
-    if job.get['position']:
+    if job.title:
         score += 1
+
+    return score
 
 def clean_input(text): ### removes all special characters from the input [sentence] -> provides with the list of output
     cleaned_list = re.sub(r"[^\w]+", " ", text).lower().split()
@@ -32,7 +35,7 @@ def deduplicate_job_listings(jobs_list, **kwargs):
     unique_jobs = {}
 
     for job in jobs_list:
-        key = f"{job['position']}|{job['company']}"
+        key = f"{job.title}|{job.company}"
 
         if key not in unique_jobs:
             unique_jobs[key] = job
@@ -54,20 +57,17 @@ def filtering_jobs(jobs_list, keywords, tags, minimum_sal):
     filtered_jobs = []
 
     for job in jobs_list:
-        position_text = job["position"].lower()
-        position_exists = any(key in position_text for key in keywords)
+        position_text = job.title.lower()
+        position_exists = any(key.lower() in position_text for key in keywords)
 
         tags_exist = False
+        job_tags = [t.lower() for t in job.tags or []]
         for tag in tags:
-            # print(
-            #     f"{job['position']} | "
-            #     f"position_match={position_exists} | "
-            #     f"tags_match={tags_exist} | ")
-            if tag in job["tags"]:
+            if tag.lower() in job_tags:
                 tags_exist = True
                 break
 
-        salary_check = job["salary_min"] > minimum_sal
+        salary_check = (job.salary_min or 0) > minimum_sal
 
         if (position_exists or tags_exist) and salary_check:
             filtered_jobs.append(job)
@@ -76,31 +76,31 @@ def filtering_jobs(jobs_list, keywords, tags, minimum_sal):
 
 def score_job(job, keywords, tags, minimum_sal):
     score = 0
-    source_weight = SOURCE_WEIGHTS.get(job["source"], 1.0)
+    source_weight = SOURCE_WEIGHTS.get(job.source, 1.0)
+    position = (job.title or "").lower()
+    job_tags = [t.lower() for t in (job.tags or [])]
 
     for key in keywords:
-        if key.lower() in job["position"]:
+        if key.lower() in position:
             score += 3
 
     for tag in tags:
-        if tag.lower() in job["tags"]:
-            score+= 1.25 * source_weight
+        if tag.lower() in job_tags:
+            score += 1.25 * source_weight
 
-    if job["salary_min"] > minimum_sal*1.2:
-        score+= 4
+    salary_min = job.salary_min or 0
 
-    elif job["salary_min"] > minimum_sal:
-        score+= 2
+    if salary_min > minimum_sal * 1.2:
+        score += 4
+    elif salary_min > minimum_sal:
+        score += 2
 
-    elif job["salary_min"] < minimum_sal:
-        score +=0
-
-    job["score"] = score
+    job.score = score
 
     return job
 
 def return_highest_matches(count, jobs):
-    sorted_jobs = sorted(jobs, key=lambda job: job["score"], reverse=True)
+    sorted_jobs = sorted(jobs, key=lambda job: job.score, reverse=True)
     return sorted_jobs[:count]
 
 def run_pipeline(keywords, tags, minimum_sal, top_n):

@@ -5,14 +5,14 @@ TOP_OFFERS_COUNTS = 15
 is_on = True
 
 while is_on:
-    user_tags_input = input("Provide me with the list of Tags you want to see within jobs")
+    user_tags_input = input("Provide me with the list of Tags you want to see within jobs\n")
     user_tags = clean_input(user_tags_input)
 
-    user_keywords_input = input("Provide me with a list of keywords in searched jobs")
+    user_keywords_input = input("Provide me with a list of keywords in searched jobs\n")
     user_keywords = clean_input(user_keywords_input)
 
     try:
-        user_minimumSal = int(input("Provide me with a minimum acceptable salary"))
+        user_minimumSal = int(input("Provide me with a minimum acceptable salary\n"))
         is_on = False
     except ValueError:
         print("Provided value is not an integer, please correct")
