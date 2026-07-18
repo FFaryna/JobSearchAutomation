@@ -27,4 +27,6 @@ while is_on:
 
     print(f"These are top jobs found: \n")
     for job in final_jobs_list:
-        print(f"{job['position']} | {job['company']} | {job['salary_min']} | {job['url']}")
+        print(
+            f"{job.title} | {job.company} | {job.salary_min} | {job.url}"
+        )

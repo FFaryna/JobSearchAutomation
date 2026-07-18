@@ -41,7 +41,7 @@ def normalize_job(job: dict) -> Job:
     return Job(
         title=job.get("position", ""),
         company= job.get("company", ""),
-        description = None,
+        description=job.get("description"),
         tags=job.get("tags") or [],
         salary_min= parse_salary(job.get("salary_min")),
         salary_max= parse_salary(job.get("salary_max")),

@@ -17,7 +17,7 @@ def duplicate_quality_score(job):
 
     tags = job.tags or []
     if tags:
-        score += len(job['tags']) * 0.5
+        score += len(job.tags) * 0.5
 
     if job.company:
         score += 1

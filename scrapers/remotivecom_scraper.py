@@ -31,7 +31,14 @@ def is_valid_job(job):
         url
     )
 
-def normalise_salary(value): ## determine min and max salary, if any -> still requires some improvement for more complex wording cases. Possible extension of regex to handle such cases
+def normalise_salary(value): ## determine min and max salary, if any -> still requires some improvement for more complex wording cases. Possible extension of regex to handle such cases. Also, the APi needs investigation of what formats can be provided. For now -> it's either "12k", "12-24k", "$40 - 52$/hr/hour"
+
+    if not value:
+        return []
+
+    value = str(value)
+
+
     try:
         clean_range = value.strip().lower()
         parts = clean_range.split("-")
@@ -41,12 +48,17 @@ def normalise_salary(value): ## determine min and max salary, if any -> still re
 
             if "k" in p:
                 num = float(p.replace("k", "").replace("$", ""))
-                new_value = num*1000
-                parts[i] = new_value
+                parts[i] = num*1000
+
+            elif "hour" in p or "hr" in p:
+                num = float(
+                    p.replace("$", "")
+                    .replace ("/hour", "")
+                    .replace("/hr","")
+                )
+                parts[i] = num*160
             else:
-                num = float(p.replace("$", ""))
-                new_value = num*160
-                parts[i] = new_value
+                parts[i] = float(p.replace("$", ""))
 
         return parts
 
@@ -84,8 +96,8 @@ def clean_job(job):
 
     salary = normalise_salary(raw_salary)
     if not salary:
-        salary_min = 0
-        salary_max = 0
+        salary_min = None
+        salary_max = None
 
     elif len(salary) >1:
         salary_min = salary[0]
@@ -98,7 +110,7 @@ def clean_job(job):
         title = title,
         company= job.get("company_name", ""),
         description=description,
-        tags= [],
+        tags=extract_tags(description),
         salary_min=salary_min,
         salary_max=salary_max,
         url=url,
@@ -107,7 +119,7 @@ def clean_job(job):
     )
 
 
-def get_remotive_jobs():
+def get_remotive_jobs() -> list[Job]:
     if DEBUG_MODE:
         with open(file="../remotive_raw.json", mode="r") as file:
             raw_jobs = json.load(file)
