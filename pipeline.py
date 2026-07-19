@@ -1,6 +1,12 @@
 import re
 from scrapers.remoteok_scraper import get_remoteok_jobs
 from scrapers.remotivecom_scraper import get_remotive_jobs
+from models.pipeline_run_report import PipelineRunReport
+from datetime import datetime
+
+
+
+TIMESTAMP = datetime.now().strftime("%d/%m %H:%M:%S")
 
 TOP_VALUES = 10
 SOURCE_WEIGHTS = {
@@ -33,6 +39,7 @@ def clean_input(text): ### removes all special characters from the input [senten
 
 def deduplicate_job_listings(jobs_list, **kwargs):
     unique_jobs = {}
+    duplicates = []
 
     for job in jobs_list:
         key = f"{job.title}|{job.company}"
@@ -43,13 +50,26 @@ def deduplicate_job_listings(jobs_list, **kwargs):
         else:
             existing_job = unique_jobs[key]
 
+            duplicates.append({
+                "duplicate": job.title,
+                "company": job.company,
+            })
+
             current_score = duplicate_quality_score(job)
             existing_score = duplicate_quality_score(existing_job)
 
             if current_score > existing_score:
                 unique_jobs[key] = job
 
-    return list(unique_jobs.values()) ## allows to retrieve the values from the dictionary created above, where each key is a concat of position + company. In this way, the final list can be used in the main.py
+    #### ============== REPORTING PART ==============
+    deduplication_report = {
+        "before": len(jobs_list),
+        "after": len(unique_jobs),
+        "removed": len(jobs_list) - len(unique_jobs),
+        "examples": duplicates[:5]
+    }
+
+    return list(unique_jobs.values()), deduplication_report ## allows to retrieve the values from the dictionary created above, where each key is a concat of position + company. In this way, the final list can be used in the main.py
 
 def filtering_jobs(jobs_list, keywords, tags, minimum_sal):
     print(f"Total jobs before filtering: {len(jobs_list)}")
@@ -126,7 +146,8 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
 
 
     # 2. Deduplicate
-    jobs = deduplicate_job_listings(jobs)
+    jobs, deduplication_report = deduplicate_job_listings(jobs)
+    report.deduplication = deduplication_report
 
     # 3. FILTER
     filtered_jobs = filtering_jobs(
