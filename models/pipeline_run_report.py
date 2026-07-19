@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, asdict
 from typing import Any
 
 @dataclass
@@ -9,3 +9,6 @@ class PipelineRunReport:
         deduplication: dict[str, Any] | None = None
         filtering: dict[str, Any] | None = None
         scoring: dict[str, Any] | None = None
+
+        def to_dict(self):
+                return asdict(self)
