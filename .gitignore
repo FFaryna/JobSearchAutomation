@@ -5,3 +5,4 @@ __pycache__/
 
 # Generated scraper data
 *_raw.json
+reports/*.json
