@@ -115,7 +115,15 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
     )
 
     # 1. EXTRACT
-    jobs = get_remotive_jobs() + get_remoteok_jobs()
+    remotive_jobs = get_remotive_jobs()
+    remoteok_jobs = get_remoteok_jobs()
+    jobs = remoteok_jobs + remotive_jobs
+
+    report.extraction = {
+        "remotive": len(remotive_jobs),
+        "remoteok": len(remoteok_jobs)
+    }
+
 
     # 2. Deduplicate
     jobs = deduplicate_job_listings(jobs)
