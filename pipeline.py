@@ -163,6 +163,8 @@ def return_highest_matches(count, jobs):
 
 def run_pipeline(keywords, tags, minimum_sal, top_n):
 
+    # 0. PREPARE REPORTING FILE
+
     report = PipelineRunReport(
         timestamp=TIMESTAMP,
         user_input={
@@ -229,7 +231,7 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
         "top_results": scoring_results[:4]
     }
 
-    return final_jobs
+    return final_jobs, report
 
 
 
