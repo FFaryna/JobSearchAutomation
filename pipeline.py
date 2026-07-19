@@ -72,9 +72,15 @@ def deduplicate_job_listings(jobs_list, **kwargs):
     return list(unique_jobs.values()), deduplication_report ## allows to retrieve the values from the dictionary created above, where each key is a concat of position + company. In this way, the final list can be used in the main.py
 
 def filtering_jobs(jobs_list, keywords, tags, minimum_sal):
-    print(f"Total jobs before filtering: {len(jobs_list)}")
+    jobs_before = len(jobs_list)
+
+
+    print(f"Total jobs before filtering: {jobs_before}")
     print(f"TAGS RAW: {tags}")
     filtered_jobs = []
+
+    salary_removed = 0
+    no_match_removed = 0
 
     for job in jobs_list:
         position_text = job.title.lower()
@@ -92,7 +98,28 @@ def filtering_jobs(jobs_list, keywords, tags, minimum_sal):
         if (position_exists or tags_exist) and salary_check:
             filtered_jobs.append(job)
 
-    return filtered_jobs
+        else:
+            if not salary_check:
+                salary_removed += 1
+
+            elif not position_exists and not tags_exist:
+                no_match_removed += 1
+
+    ### =================== reporting =====================
+
+    filtering_report = {
+        "before": jobs_before,
+        "after": len(filtered_jobs),
+        "removed": jobs_before - len(filtered_jobs),
+        "reasons":{
+            "salary": salary_removed,
+            "no_match": no_match_removed
+        }
+    }
+
+
+
+    return filtered_jobs, filtering_report
 
 def score_job(job, keywords, tags, minimum_sal):
     score = 0
@@ -150,12 +177,14 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
     report.deduplication = deduplication_report
 
     # 3. FILTER
-    filtered_jobs = filtering_jobs(
+    filtered_jobs, filtering_report = filtering_jobs(
         jobs_list = jobs,
         keywords=keywords,
         tags=tags,
         minimum_sal=minimum_sal
     )
+
+    report.filtering = filtering_report
 
     # 4. SCORE
     for job in filtered_jobs:
