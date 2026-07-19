@@ -1,4 +1,5 @@
 from pipeline import run_pipeline, clean_input
+from reports.report_writer import save_report
 
 TOP_OFFERS_COUNTS = 15
 
@@ -19,7 +20,7 @@ while is_on:
 
 
 
-    final_jobs_list = run_pipeline(
+    final_jobs_list, report = run_pipeline(
         keywords=user_keywords,
         tags=user_tags,
         minimum_sal=user_minimumSal,
@@ -30,3 +31,7 @@ while is_on:
         print(
             f"{job.title} | {job.company} | {job.salary_min} | {job.url}"
         )
+
+    saved_file = save_report(report)
+
+    print(f"Report saved: {saved_file}")
