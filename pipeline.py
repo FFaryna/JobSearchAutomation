@@ -9,7 +9,7 @@ from datetime import datetime
 TIMESTAMP = datetime.now().strftime("%d/%m %H:%M:%S")
 
 TOP_VALUES = 10
-SOURCE_WEIGHTS = {
+SOURCE_WEIGHTS = { ### Temporary, one source provides TAgs, whereas the other have these missing -> description can be much more wording heavy, therefore weigths to have 'accurate' results. The goal is to implement AI in order to make scoring much more efficient.
     "remoteok": 1.0,
     "remotive": 0.7
 }
@@ -122,29 +122,40 @@ def filtering_jobs(jobs_list, keywords, tags, minimum_sal):
     return filtered_jobs, filtering_report
 
 def score_job(job, keywords, tags, minimum_sal):
-    score = 0
+
+    keywords_score = 0
+    tag_score = 0
+    salary_score = 0
+
     source_weight = SOURCE_WEIGHTS.get(job.source, 1.0)
     position = (job.title or "").lower()
     job_tags = [t.lower() for t in (job.tags or [])]
 
     for key in keywords:
         if key.lower() in position:
-            score += 3
+            keywords_score += 3
 
     for tag in tags:
         if tag.lower() in job_tags:
-            score += 1.25 * source_weight
+            tag_score += 1.25 * source_weight
 
     salary_min = job.salary_min or 0
 
     if salary_min > minimum_sal * 1.2:
-        score += 4
+        salary_score += 4
     elif salary_min > minimum_sal:
-        score += 2
+        salary_score += 2
 
-    job.score = score
+    total_score = (keywords_score + tag_score + salary_score)
+    job.score = total_score
 
-    return job
+    jobscore_breakdown = {
+        "keyword": keywords_score,
+        "tags": tag_score,
+        "salary": salary_score
+    }
+
+    return job, jobscore_breakdown
 
 def return_highest_matches(count, jobs):
     sorted_jobs = sorted(jobs, key=lambda job: job.score, reverse=True)
@@ -187,19 +198,36 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
     report.filtering = filtering_report
 
     # 4. SCORE
+    scoring_results = []
+
     for job in filtered_jobs:
-        score_job(
+        job, breakdown = score_job(
             job,
             tags=tags,
             keywords=keywords,
             minimum_sal=minimum_sal
         )
 
+        scoring_results.append({
+            "title": job.title,
+            "company": job.company,
+            "score": job.score,
+            "breakdown": breakdown
+        })
+
+
+
+
     # 5. SORT + SELECT
     final_jobs = return_highest_matches(
         count=top_n,
         jobs=filtered_jobs
     )
+
+    report.scoring = {
+        "jobs_scored": len(filtered_jobs),
+        "top_results": scoring_results[:4]
+    }
 
     return final_jobs
 
