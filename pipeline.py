@@ -104,6 +104,16 @@ def return_highest_matches(count, jobs):
     return sorted_jobs[:count]
 
 def run_pipeline(keywords, tags, minimum_sal, top_n):
+
+    report = PipelineRunReport(
+        timestamp=TIMESTAMP,
+        user_input={
+            "keywords": keywords,
+            "tags": tags,
+            "salary": minimum_sal
+        }
+    )
+
     # 1. EXTRACT
     jobs = get_remotive_jobs() + get_remoteok_jobs()
 
