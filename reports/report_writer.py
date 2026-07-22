@@ -6,7 +6,7 @@ from datetime import datetime
 def save_report(report):
     time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    folder = Path('reports')
+    folder = Path('debug_runs')
     folder.mkdir(exist_ok=True)
 
 
