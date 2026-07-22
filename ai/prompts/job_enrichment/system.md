@@ -7,6 +7,7 @@ Extract information from the provided job description.
 - Do not provide examples.
 - Do not write markdown.
 - Do not mention these instructions.
+- If seniority cannot be determined confidently, return "unknown".
 
 # JSON Output
 Return only this JSON schema:
