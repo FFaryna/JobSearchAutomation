@@ -3,7 +3,7 @@ from pathlib import Path
 import json
 
 PROMPT_DIR = Path(__file__).parent / "prompts" / "job_enrichment"
-
+LLM_MODEL = "llama3.2"
 
 def load_prompts():
     user_prompt = Path(PROMPT_DIR / "user.md")
@@ -20,11 +20,29 @@ def create_user_prompt(user_prompt: str, job_description: str) -> str:
 
     return user_prompt
 
+def validate_enrichment(data: dict) -> bool:
 
-def analyse_job(user_prompt:str, system_prompt:str) -> str:
+    required =[
+        "skills",
+        "role",
+        "seniority"
+    ]
+
+    return all(
+        field in data for field in required
+    )
+
+def fallback_llm_output() -> dict:
+    return {
+        "skills": [],
+        "role": "unknown",
+        "seniority": "unknown",
+    }
+
+def extract_job_metadata(user_prompt: str, system_prompt: str) -> dict:
     try:
         response = ollama.chat(
-            model='llama3.2',
+            model=LLM_MODEL,
             messages=[
                 {
                     "role": "system",
@@ -43,8 +61,22 @@ def analyse_job(user_prompt:str, system_prompt:str) -> str:
 
     except ollama.ResponseError as e:
         print(e.error)
+        return fallback_llm_output()
 
-    return response.message.content
+    except Exception as e:
+        print(e)
+        return fallback_llm_output()
+
+    try:
+        parsed_response = json.loads(response.message.content)
+
+        if validate_enrichment(parsed_response):
+            return parsed_response
+
+        return fallback_llm_output()
+
+    except json.JSONDecodeError:
+        return fallback_llm_output()
 
 
 def output():
@@ -58,17 +90,10 @@ def output():
     user_prompt = create_user_prompt(user_prompt=user_prompt, job_description=dummy_description)
 
 
-    result = analyse_job(user_prompt, system_prompt)
+    result = extract_job_metadata(user_prompt, system_prompt)
 
-    try:
-        pretty_result = json.dumps(
-            json.loads(result),
-            indent=4
-        )
+    pretty_result = json.dumps(result, indent=4)
+    print(pretty_result)
 
-        print(pretty_result)
-
-    except json.JSONDecodeError:
-        print(result)
 
 output()
