@@ -8,6 +8,7 @@ class PipelineRunReport:
         extraction: dict[str, Any] | None = None
         deduplication: dict[str, Any] | None = None
         filtering: dict[str, Any] | None = None
+        ai_enrichment: dict[str, Any] | None = None
         scoring: dict[str, Any] | None = None
 
         def to_dict(self):
