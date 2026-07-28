@@ -1,16 +1,17 @@
 import ollama
 from pathlib import Path
 import json
+from models.job import Job
 
 PROMPT_DIR = Path(__file__).parent / "prompts" / "job_enrichment"
 LLM_MODEL = "llama3.2"
 
-def load_prompts():
-    user_prompt = Path(PROMPT_DIR / "user.md")
-    system_prompt = Path(PROMPT_DIR / "system.md")
+def load_prompts() -> tuple[str, str]:
+    user_prompt_path = Path(PROMPT_DIR / "user.md")
+    system_prompt_path = Path(PROMPT_DIR / "system.md")
 
-    user_prompt = user_prompt.read_text()
-    system_prompt = system_prompt.read_text()
+    user_prompt = user_prompt_path.read_text()
+    system_prompt = system_prompt_path.read_text()
 
     return user_prompt, system_prompt
 
@@ -32,7 +33,7 @@ def validate_enrichment(data: dict) -> bool:
         field in data for field in required
     )
 
-def fallback_llm_output() -> dict:
+def fallback_llm_output() -> dict[str, object]:
     return {
         "skills": [],
         "role": "unknown",
@@ -78,22 +79,22 @@ def extract_job_metadata(user_prompt: str, system_prompt: str) -> dict:
     except json.JSONDecodeError:
         return fallback_llm_output()
 
+def enrich_job(job: Job) -> Job:
 
-def output():
-    dummy_description =  """
-    Python developer required.
-    Experience with AWS and SQL.
-    """
+    if not job.description:
+        return job
 
     user_prompt, system_prompt = load_prompts()
 
-    user_prompt = create_user_prompt(user_prompt=user_prompt, job_description=dummy_description)
+    user_prompt = create_user_prompt(user_prompt=user_prompt,
+                                     job_description=job.description or ""
+    )
 
 
-    result = extract_job_metadata(user_prompt, system_prompt)
+    metadata = extract_job_metadata(user_prompt, system_prompt)
 
-    pretty_result = json.dumps(result, indent=4)
-    print(pretty_result)
+    job.ai_role = metadata["role"]
+    job.ai_seniority = metadata["seniority"]
+    job.ai_tags = metadata["skills"]
 
-
-output()
+    return job
