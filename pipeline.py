@@ -166,15 +166,16 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
         "remoteok": len(remoteok_jobs)
     }
 
-    # 1.1 AI enrich:
-
-
-
     # 2. Deduplicate
     jobs, deduplication_report = deduplicate_job_listings(jobs)
     report.deduplication = deduplication_report
 
-    # 3. FILTER
+    # 3. AI enrichment
+    for job in jobs:
+        enrich_job(job)
+
+
+    # 4. FILTER
     filtered_jobs, filtering_report = filtering_jobs(
         jobs_list = jobs,
         minimum_sal=minimum_sal
@@ -182,7 +183,25 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
 
     report.filtering = filtering_report
 
-    # 4. SCORE
+    #4. AI enrichment
+    for job in jobs:
+        enrich_job(job)
+
+    report.ai_enrichment = {
+        "jobs_processed": len(filtered_jobs),
+        "successful_enrichments": sum(1 for job in filtered_jobs if job.ai_role != "unknown"),
+        "examples": [
+            {
+                "title": job.title,
+                "role": job.ai_role,
+                "seniority": job.ai_seniority,
+                "ai_tags": job.ai_tags
+            }
+            for job in filtered_jobs[:5]
+        ]
+    }
+
+    # 5. SCORE
     scoring_results = []
 
     for job in filtered_jobs:
@@ -208,7 +227,7 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
 
 
 
-    # 5. SORT + SELECT
+    # 6. SORT + SELECT
     scoring_results = sorted(
         scoring_results,
         key=lambda x: x["score"],
