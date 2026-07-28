@@ -2,7 +2,9 @@ import re
 from scrapers.remoteok_scraper import get_remoteok_jobs
 from scrapers.remotivecom_scraper import get_remotive_jobs
 from models.pipeline_run_report import PipelineRunReport
+from ai.job_enrichment import enrich_job
 from datetime import datetime
+
 
 
 
@@ -71,53 +73,33 @@ def deduplicate_job_listings(jobs_list, **kwargs):
 
     return list(unique_jobs.values()), deduplication_report ## allows to retrieve the values from the dictionary created above, where each key is a concat of position + company. In this way, the final list can be used in the main.py
 
-def filtering_jobs(jobs_list, keywords, tags, minimum_sal):
-    jobs_before = len(jobs_list)
-
-
-    print(f"Total jobs before filtering: {jobs_before}")
-    print(f"TAGS RAW: {tags}")
+def filtering_jobs(jobs_list, minimum_sal):
     filtered_jobs = []
 
-    salary_removed = 0
-    no_match_removed = 0
+    removed = {
+        "missing_title": 0,
+        "low_salary": 0
+    }
 
     for job in jobs_list:
-        position_text = job.title.lower()
-        position_exists = any(key.lower() in position_text for key in keywords)
 
-        tags_exist = False
-        job_tags = [t.lower() for t in job.tags or []]
-        for tag in tags:
-            if tag.lower() in job_tags:
-                tags_exist = True
-                break
+        if not job.title:
+            removed["missing_title"] += 1
+            continue
 
-        salary_check = (job.salary_min or 0) > minimum_sal
+        if job.salary_min and job.salary_min < minimum_sal:
+            removed["low_salary"] += 1
+            continue
 
-        if (position_exists or tags_exist) and salary_check:
-            filtered_jobs.append(job)
-
-        else:
-            if not salary_check:
-                salary_removed += 1
-
-            elif not position_exists and not tags_exist:
-                no_match_removed += 1
-
+        filtered_jobs.append(job)
     ### =================== reporting =====================
 
     filtering_report = {
-        "before": jobs_before,
+        "before": len(jobs_list),
         "after": len(filtered_jobs),
-        "removed": jobs_before - len(filtered_jobs),
-        "reasons":{
-            "salary": salary_removed,
-            "no_match": no_match_removed
-        }
+        "removed": len(jobs_list) - len(filtered_jobs),
+        "reasons": removed
     }
-
-
 
     return filtered_jobs, filtering_report
 
@@ -184,6 +166,9 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
         "remoteok": len(remoteok_jobs)
     }
 
+    # 1.1 AI enrich:
+
+
 
     # 2. Deduplicate
     jobs, deduplication_report = deduplicate_job_listings(jobs)
@@ -192,8 +177,6 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
     # 3. FILTER
     filtered_jobs, filtering_report = filtering_jobs(
         jobs_list = jobs,
-        keywords=keywords,
-        tags=tags,
         minimum_sal=minimum_sal
     )
 
