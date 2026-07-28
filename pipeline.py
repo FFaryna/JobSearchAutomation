@@ -200,10 +200,21 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
             "breakdown": breakdown
         })
 
+        sorted_results = sorted(
+            scoring_results,
+            key=lambda x: x["score"],
+            reverse=True
+        )
 
 
 
     # 5. SORT + SELECT
+    scoring_results = sorted(
+        scoring_results,
+        key=lambda x: x["score"],
+        reverse=True
+    )
+
     final_jobs = return_highest_matches(
         count=top_n,
         jobs=filtered_jobs
@@ -215,7 +226,6 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
     }
 
     return final_jobs, report
-
 
 
 
