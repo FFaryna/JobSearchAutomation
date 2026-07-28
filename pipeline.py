@@ -219,13 +219,6 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
             "breakdown": breakdown
         })
 
-        sorted_results = sorted(
-            scoring_results,
-            key=lambda x: x["score"],
-            reverse=True
-        )
-
-
 
     # 6. SORT + SELECT
     scoring_results = sorted(
