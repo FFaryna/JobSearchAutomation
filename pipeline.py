@@ -11,10 +11,6 @@ from datetime import datetime
 TIMESTAMP = datetime.now().strftime("%d/%m %H:%M:%S")
 
 TOP_VALUES = 10
-SOURCE_WEIGHTS = { ### Temporary, one source provides TAgs, whereas the other have these missing -> description can be much more wording heavy, therefore weigths to have 'accurate' results. The goal is to implement AI in order to make scoring much more efficient.
-    "remoteok": 1.0,
-    "remotive": 0.7
-}
 
 ## Used to clean user's input
 def duplicate_quality_score(job):
@@ -103,38 +99,46 @@ def filtering_jobs(jobs_list, minimum_sal):
 
     return filtered_jobs, filtering_report
 
-def score_job(job, keywords, tags, minimum_sal):
+def score_job(job, keywords, wanted_tags, minimum_sal):
 
     keywords_score = 0
     tag_score = 0
     salary_score = 0
 
-    source_weight = SOURCE_WEIGHTS.get(job.source, 1.0)
+
     position = (job.title or "").lower()
-    job_tags = [t.lower() for t in (job.tags or [])]
+    llm_role = (job.ai_role or "").lower()
+    searchable_role = f"{position} {llm_role}" ### Merges both Ai defined position and declared role from the JSON of the job.
+
+
+    all_tags = {
+        *[t.lower() for t in job.tags],
+        *[t.lower() for t in job.ai_tags]
+    }
 
     for key in keywords:
-        if key.lower() in position:
-            keywords_score += 3
+        if key.lower() in searchable_role:
+            keywords_score += 1.5
 
-    for tag in tags:
-        if tag.lower() in job_tags:
-            tag_score += 1.25 * source_weight
+    for wanted_tag in wanted_tags:
+        if wanted_tag.lower() in all_tags:
+            tag_score += 2
 
     salary_min = job.salary_min or 0
 
-    if salary_min > minimum_sal * 1.2:
-        salary_score += 4
-    elif salary_min > minimum_sal:
+    if salary_min >= minimum_sal * 1.2:
         salary_score += 2
+    elif salary_min >= minimum_sal:
+        salary_score += 1
 
     total_score = (keywords_score + tag_score + salary_score)
     job.score = total_score
 
     jobscore_breakdown = {
-        "keyword": keywords_score,
+        "keyword_role": keywords_score,
         "tags": tag_score,
-        "salary": salary_score
+        "salary": salary_score,
+        "total": total_score
     }
 
     return job, jobscore_breakdown
@@ -170,12 +174,7 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
     jobs, deduplication_report = deduplicate_job_listings(jobs)
     report.deduplication = deduplication_report
 
-    # 3. AI enrichment
-    for job in jobs:
-        enrich_job(job)
-
-
-    # 4. FILTER
+    # 3. FILTER
     filtered_jobs, filtering_report = filtering_jobs(
         jobs_list = jobs,
         minimum_sal=minimum_sal
@@ -184,7 +183,7 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
     report.filtering = filtering_report
 
     #4. AI enrichment
-    for job in jobs:
+    for job in filtered_jobs:
         enrich_job(job)
 
     report.ai_enrichment = {
@@ -207,8 +206,8 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
     for job in filtered_jobs:
         job, breakdown = score_job(
             job,
-            tags=tags,
             keywords=keywords,
+            wanted_tags=tags,
             minimum_sal=minimum_sal
         )
 
