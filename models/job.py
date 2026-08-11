@@ -9,8 +9,15 @@ class Job:
 
     description: str | None = None
     tags: list[str] = field(default_factory=list)
+
     salary_min: int | None = None
     salary_max: int | None = None
     date_posted: str | None = None
+
+    # AI enrichment
+    ai_tags: list[str] = field(default_factory=list)
+    ai_role: str | None = None
+    ai_seniority: str | None = None
+
     score: float = 0
 
