@@ -7,6 +7,8 @@ class  JobEnrichmentCache:
     def __init__(self, database_path):
         self.database_path = database_path
         self._initialize_database()
+        self.cache_hits = 0
+        self.cache_misses = 0
 
     def _initialize_database(self):
         with sqlite3.connect(self.database_path) as connection:
@@ -38,6 +40,7 @@ class  JobEnrichmentCache:
 
             row = result.fetchone()
             if row is None:
+                self.cache_misses += 1
                 return None
             else:
                 list_tags = json.loads(row["ai_tags"])
@@ -50,6 +53,8 @@ class  JobEnrichmentCache:
                     ai_tags = list_tags,
                     created_at = row ["created_at"]
                 )
+
+                self.cache_hits += 1
 
 
                 return enrichment
