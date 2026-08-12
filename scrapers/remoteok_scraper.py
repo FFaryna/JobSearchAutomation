@@ -1,7 +1,9 @@
-import requests
+import requests, os, json
 from models.job import Job
 
 SOURCE_NAME = "remoteok"
+DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
+
 
 def fetch_data() -> list[dict]:
     url = "https://remoteok.com/api"
@@ -52,6 +54,12 @@ def normalize_job(job: dict) -> Job:
 
 
 def get_remoteok_jobs() -> list[Job]:
+    if DEBUG_MODE:
+        with open("remoteok_scraper.py.json", mode="r", encoding="utf-8") as file:
+            raw_jobs = json.load(file)
+    else:
+        raw_jobs = fetch_data()
+
     raw_jobs = fetch_data()
     result = []
 
