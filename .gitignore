@@ -3,6 +3,12 @@
 __pycache__/
 *.pyc
 
+# Local databases
+*.db
+
 # Generated scraper data
 *_raw.json
 reports/*.json
+
+# Local debug runs
+debug_runs/
