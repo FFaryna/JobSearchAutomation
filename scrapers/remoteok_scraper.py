@@ -55,12 +55,11 @@ def normalize_job(job: dict) -> Job:
 
 def get_remoteok_jobs() -> list[Job]:
     if DEBUG_MODE:
-        with open("remoteok_scraper.py.json", mode="r", encoding="utf-8") as file:
+        with open("remoteok_scraper.json", mode="r", encoding="utf-8") as file:
             raw_jobs = json.load(file)
     else:
         raw_jobs = fetch_data()
 
-    raw_jobs = fetch_data()
     result = []
 
     for job in raw_jobs:
