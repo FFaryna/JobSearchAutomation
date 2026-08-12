@@ -1,5 +1,6 @@
 from ai.job_enrichment import create_user_prompt, validate_enrichment, fallback_llm_output, enrich_job
 from models.job import Job
+from databases.enrichment_cache import JobEnrichmentCache
 
 def test_create_user_prompt_replace_description():
     template = """
@@ -50,8 +51,9 @@ def test_fallback_output():
     assert result["seniority"] == "unknown"
 
 
-def test_job_enrichment(mocker):
+def test_job_enrichment(mocker, tmp_path):
 
+    cache = JobEnrichmentCache(tmp_path / "test_cache.db")
     fake_response = {
         "skills": [
             "Python",
@@ -75,7 +77,7 @@ def test_job_enrichment(mocker):
     )
 
 
-    result = enrich_job(job)
+    result = enrich_job(job, cache)
 
     assert result.ai_tags == [
         "Python",
@@ -85,7 +87,8 @@ def test_job_enrichment(mocker):
     assert result.ai_role == "Backend Developer"
     assert result.ai_seniority == "Junior"
 
-def test_job_without_description_is_not_enriched():
+def test_job_without_description_is_not_enriched(tmp_path):
+    cache = JobEnrichmentCache(tmp_path / "test_cache.db")
 
     job = Job(
         title="Python Developer",
@@ -94,9 +97,7 @@ def test_job_without_description_is_not_enriched():
         url="https://example.com"
     )
 
-
-    result = enrich_job(job)
-
+    result = enrich_job(job, cache)
 
     assert result.ai_tags == []
     assert result.ai_role is None
