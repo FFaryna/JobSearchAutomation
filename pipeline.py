@@ -195,7 +195,10 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
 
     report.ai_enrichment = {
         "jobs_processed": len(filtered_jobs),
+        "LLM_attempts": cache.cache_misses,
+        "previous_analyses_reused": cache.cache_hits,
         "successful_enrichments": sum(1 for job in filtered_jobs if job.ai_role != "unknown"),
+        "failed_enrichments": sum(1 for job in filtered_jobs if job.ai_role == "unknown"),
         "examples": [
             {
                 "title": job.title,
@@ -221,6 +224,11 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
         scoring_results.append({
             "title": job.title,
             "company": job.company,
+            "ai_role": job.ai_role,
+            "ai_seniority": job.ai_seniority,
+            "ai_tags": job.ai_tags,
+            "salary_min": job.salary_min,
+            "url": job.url,
             "score": job.score,
             "breakdown": breakdown
         })
