@@ -1,7 +1,9 @@
-import ollama
+import ollama, json, datetime
 from pathlib import Path
-import json
+from databases.enrichment_cache import JobEnrichmentCache
 from models.job import Job
+from models.cached_enrichment import CachedEnrichment
+
 
 PROMPT_DIR = Path(__file__).parent / "prompts" / "job_enrichment"
 LLM_MODEL = "llama3.2"
@@ -79,22 +81,52 @@ def extract_job_metadata(user_prompt: str, system_prompt: str) -> dict:
     except json.JSONDecodeError:
         return fallback_llm_output()
 
-def enrich_job(job: Job) -> Job:
+def enrich_job(job: Job, cache: JobEnrichmentCache) -> Job:
 
     if not job.description:
         return job
 
     user_prompt, system_prompt = load_prompts()
 
-    user_prompt = create_user_prompt(user_prompt=user_prompt,
-                                     job_description=job.description or ""
-    )
+### Check if the result is within cached LLM database to avoid processing time
+    identifier = f"{job.source}:{job.url}"
+    cached = cache.get(identifier)
+
+    if cached:
+        print("cache HIT")
+        job.ai_role = cached.ai_role
+        job.ai_seniority = cached.ai_seniority
+        job.ai_tags = cached.ai_tags
+
+### If not, call LLM as usual
+    else:
+        print("cache MISS - calling llm")
+        user_prompt = create_user_prompt(
+            user_prompt=user_prompt,
+            job_description=job.description or ""
+        )
+
+        metadata = extract_job_metadata(user_prompt, system_prompt)
+
+        job.ai_role = metadata["role"]
+        job.ai_seniority = metadata["seniority"]
+        job.ai_tags = metadata["skills"]
+
+        created_at = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+
+### Store result of LLM into Cache:
+
+        cached_object = CachedEnrichment(
+            id=None,
+            identifier=identifier,
+            ai_role=job.ai_role,
+            ai_seniority=job.ai_seniority,
+            ai_tags=job.ai_tags,
+            created_at=created_at
+        )
+
+        cache.save(cached_object)
 
 
-    metadata = extract_job_metadata(user_prompt, system_prompt)
-
-    job.ai_role = metadata["role"]
-    job.ai_seniority = metadata["seniority"]
-    job.ai_tags = metadata["skills"]
 
     return job
