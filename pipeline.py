@@ -1,14 +1,18 @@
 import re
+from pathlib import Path
 from scrapers.remoteok_scraper import get_remoteok_jobs
 from scrapers.remotivecom_scraper import get_remotive_jobs
 from models.pipeline_run_report import PipelineRunReport
 from ai.job_enrichment import enrich_job
 from datetime import datetime
+from databases.enrichment_cache import JobEnrichmentCache
 
 
 
 
 TIMESTAMP = datetime.now().strftime("%d/%m %H:%M:%S")
+BASE_DIR = Path(__file__).resolve().parent
+DATABASE_PATH = BASE_DIR / "databases" / "job_cache.db"
 
 TOP_VALUES = 10
 
@@ -160,6 +164,9 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
         }
     )
 
+    # 0.1 Load in Cache for LLM:
+    cache = JobEnrichmentCache(DATABASE_PATH)
+
     # 1. EXTRACT
     remotive_jobs = get_remotive_jobs()
     remoteok_jobs = get_remoteok_jobs()
@@ -184,7 +191,7 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
 
     #4. AI enrichment
     for job in filtered_jobs:
-        enrich_job(job)
+        enrich_job(job, cache)
 
     report.ai_enrichment = {
         "jobs_processed": len(filtered_jobs),
