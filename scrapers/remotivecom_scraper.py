@@ -120,7 +120,7 @@ def clean_job(job):
 
 def get_remotive_jobs() -> list[Job]:
     if DEBUG_MODE:
-        with open(file="../remotive_raw.json", mode="r") as file:
+        with open("remotive_raw.json", mode="r", encoding="utf-8") as file:
             raw_jobs = json.load(file)
     else:
         raw_jobs = fetch_data()
@@ -135,4 +135,3 @@ def get_remotive_jobs() -> list[Job]:
             result.append(cleaned)
 
     return result
-
