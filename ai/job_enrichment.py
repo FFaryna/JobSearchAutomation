@@ -93,14 +93,12 @@ def enrich_job(job: Job, cache: JobEnrichmentCache) -> Job:
     cached = cache.get(identifier)
 
     if cached:
-        print("cache HIT")
         job.ai_role = cached.ai_role
         job.ai_seniority = cached.ai_seniority
         job.ai_tags = cached.ai_tags
 
 ### If not, call LLM as usual
     else:
-        print("cache MISS - calling llm")
         user_prompt = create_user_prompt(
             user_prompt=user_prompt,
             job_description=job.description or ""
