@@ -103,6 +103,37 @@ def filtering_jobs(jobs_list, minimum_sal):
 
     return filtered_jobs, filtering_report
 
+def role_matches_keywords(job, keywords):
+    searchable_role = f"{job.title} {job.ai_role or ''}".lower()
+
+    return any(
+        re.search(rf"\b{re.escape(keyword.lower())}\b", searchable_role)
+        for keyword in keywords
+    )
+
+def filter_role_compatible_jobs(jobs_list, keywords):
+    compatible_jobs = []
+    removed = []
+
+    for job in jobs_list:
+        if role_matches_keywords(job, keywords):
+            compatible_jobs.append(job)
+        else:
+            removed.append({
+                "title": job.title,
+                "company": job.company
+            })
+
+    report = {
+        "before": len(jobs_list),
+        "after": len(compatible_jobs),
+        "removed": len(jobs_list) - len(compatible_jobs),
+        "examples": removed[:5]
+    }
+
+    return compatible_jobs, report
+
+
 def score_job(job, keywords, wanted_tags, minimum_sal):
 
     keywords_score = 0
@@ -210,7 +241,15 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
         ]
     }
 
-    # 5. SCORE
+    # 5. ROLE ELIGIBILITY
+    filtered_jobs, role_filter_report = filter_role_compatible_jobs(
+        filtered_jobs,
+        keywords
+    )
+
+    report.role_filtering = role_filter_report
+
+    # 6. SCORE
     scoring_results = []
 
     for job in filtered_jobs:
@@ -234,7 +273,7 @@ def run_pipeline(keywords, tags, minimum_sal, top_n):
         })
 
 
-    # 6. SORT + SELECT
+    # 7. SORT + SELECT
     scoring_results = sorted(
         scoring_results,
         key=lambda x: x["score"],
