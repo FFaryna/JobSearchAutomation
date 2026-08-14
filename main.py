@@ -11,13 +11,15 @@ def print_pipeline_summary(report):
     print(f"RemoteOK jobs: {report.extraction['remoteok']}")
     print(f"After deduplication: {report.deduplication['after']}")
     print(f"After filtering: {report.filtering['after']}")
-    print(f"AI analyses performed: {report.ai_enrichment['ai_analyses_performed']}")
+    print(f"AI analyses performed: {report.ai_enrichment['LLM_attempts']}")
     print(f"Previous analyses reused: {report.ai_enrichment['previous_analyses_reused']}")
     print(f"Successful enrichments: {report.ai_enrichment['successful_enrichments']}")
     print(f"Failed enrichments: {report.ai_enrichment['failed_enrichments']}")
+    print(f"After role filtering: {report.role_filtering['after']}")
+    print(f"Roles rejected: {report.role_filtering['removed']}")
 
 def print_top_jobs_results(final_jobs_list):
-    print("These are top jobs found:\n")
+    print("\nThese are top jobs found:\n")
     for n, job in enumerate(final_jobs_list, start=1):
         print(
             f"=================================================\n"
